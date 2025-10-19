@@ -18,7 +18,7 @@ int main(int argc, const char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	File *fin = fopen(argv[1], "r");
+	FILE *fin = fopen(argv[1], "r");
 	if (fin == NULL) {
 		perror("Unable to open input file");
 		exit(EXIT_FAILURE);
