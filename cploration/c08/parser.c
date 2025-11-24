@@ -76,17 +76,14 @@ bool is_Ctype(const char *line) {
  */
 void parse(FILE *file) {
     char line[MAX_LINE_LENGTH];
-    char original[MAX_LINE_LENGTH];
     unsigned int line_num = 0;
     unsigned int instr_num = 0;
-    char inst_type = '?';
+    char inst_type;
 
     while (fgets(line, sizeof(line), file)) {
         line_num++;
 
         // Save original BEFORE modifications
-        strcpy(original, line);
-        original[strcspn(original, "\r\n")] = '\0';
         line[strcspn(line, "\r\n")] = '\0';
 
         // Strip whitespace & comments
@@ -120,8 +117,7 @@ void parse(FILE *file) {
         // Determine instruction type
         if (is_Atype(line)) {
             inst_type = 'A';
-        }
-        else if (is_Ctype(line)) {
+        } else{
             inst_type = 'C';
         }
 
