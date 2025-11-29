@@ -1,5 +1,5 @@
 /****************************************
- * C-ploration 8 for CS 271
+ * C-ploration 9 for CS 271
  * 
  * [NAME] Benny Garcia
  * [TERM] FALL 2025
@@ -8,6 +8,7 @@
 #include "parser.h"
 #include "symtable.h"
 #include "error.h"
+#include "hack.h"
 
 /* Function: strip
  * -------------
@@ -66,6 +67,63 @@ bool is_Ctype(const char *line) {
 	return !is_Atype(line) && !is_label(line);
 }
 
+/* Function: parse_A_instruction
+ * -----------------------------
+ * Parses an A-type instruction.
+ *
+ * line: the full A-instruction string
+ * instr: output a_instruction struct to fill
+ *
+ * Returns true if valid, false if invalid label.
+ */
+bool parse_A_instruction(const char *line, a_instruction *instr) {
+    char *s = malloc(strlen(line));
+    if (s == NULL) {
+        return false;
+    }
+
+    strcpy(s, line + 1);
+    char *s_end = NULL;
+    long result = strtol(s, &s_end, 10);
+
+    if (s == s_end) {
+        instr->is_addr = false;
+
+        instr->label = malloc(strlen(s) + 1);
+        strcpy(instr->label, s);
+
+        free(s);
+        return true;
+    }
+
+    if (*s_end != '\0') {
+        free(s);
+        return false;
+    }
+
+    instr->is_addr = true;
+    instr->address = (int16_t) result;
+
+    free(s);
+
+    return true;
+}
+
+/*Function: add_predefined_symbols
+ *-----------------------------
+ *Loads the 23 predefined Hack symbols into the symbol table before parsing begins.
+ *
+ * This function iterates over the predefined_symbols[] array in hack.h
+ * and inserts each symbol name/address pair into the symbol table.
+ */
+void add_predefined_symbols () {
+
+    for (int i = 0; i < NUM_PREDEFINED_SYMBOLS; i++) {
+        predefined_symbol sym = predefined_symbols[i];
+        symtable_insert(sym.name, sym.address);
+    }
+}
+
 /* Function: parse
  * -------------
  * iterate each line in the file and strip whitespace and comments. 
@@ -79,6 +137,10 @@ void parse(FILE *file) {
     unsigned int line_num = 0;
     unsigned int instr_num = 0;
     char inst_type;
+
+    instruction instr;
+
+    add_predefined_symbols();
 
     while (fgets(line, sizeof(line), file)) {
         line_num++;
@@ -116,13 +178,20 @@ void parse(FILE *file) {
 
         // Determine instruction type
         if (is_Atype(line)) {
-            inst_type = 'A';
-        } else{
+
+            //Parse the A-instruction
+            if (!parse_A_instruction(line, &instr.a)) {
+                exit_program(EXIT_INVALID_A_INSTR, line_num, line);
+            }
+
+            instr.type = A_INSTR;
+
+        } else {
             inst_type = 'C';
         }
 
         // Print instruction
-        printf("%u: %c  %s\n", instr_num, inst_type, line);
+        /*printf("%u: %c  %s\n", instr_num, inst_type, line);*/
 
         // Only increment for real instructions
         instr_num++;
