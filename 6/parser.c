@@ -248,6 +248,17 @@ int parse(FILE *file, instruction *instructions) {
     return instr_num;
 }
 
+opcode instruction_to_opcode(c_instruction instr) {
+    opcode op = 0;
+    op |= (7 << 13);
+    op |= (instr.a & 1) << 12;
+    op |= (instr.comp & 0x3F) << 6;
+    op |= (instr.dest & 0x7) << 3;
+    op |= (instr.jump & 0x7);
+
+    return op;
+}
+
 
 /* Function: extract_label
 
