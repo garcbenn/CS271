@@ -34,6 +34,9 @@ int main(int argc, const char *argv[]) {
     /*symtable_print_labels(); */
 
     fclose(file);
+
+    assemble(argv[1], instructions, num_instructions)
+
     free(instructions);
 
     return EXIT_SUCCESS;
