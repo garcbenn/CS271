@@ -215,9 +215,9 @@ int parse(FILE *file, instruction *instructions) {
             instr.type = A_INSTR;
 
             if (instr.a.is_addr) {
-                printf("A: %d\n", instr.a.address);
+                /*printf("A: %d\n", instr.a.address);*/
             } else {
-                printf("A: %s\n", instr.a.label);
+                /*printf("A: %s\n", instr.a.label);*/
             }
 
         } else if (is_Ctype(line)) {
@@ -237,7 +237,7 @@ int parse(FILE *file, instruction *instructions) {
 
             instr.type = C_INSTR;
             
-            printf("C: d=%d, c=%d, j=%d\n", instr.c.dest, instr.c.comp, instr.c.jump);
+            /*printf("C: d=%d, c=%d, j=%d\n", instr.c.dest, instr.c.comp, instr.c.jump);*/
 
         } else {
             instr.type = INVALID_INSTR;
@@ -251,10 +251,10 @@ int parse(FILE *file, instruction *instructions) {
 opcode instruction_to_opcode(c_instruction instr) {
     opcode op = 0;
     op |= (7 << 13);
-    op |= (instr.a & 1) << 12;
-    op |= (instr.comp & 0x3F) << 6;
-    op |= (instr.dest & 0x7) << 3;
-    op |= (instr.jump & 0x7);
+    op |= (instr.a << 12);
+    op |= (instr.comp << 6);
+    op |= (instr.dest << 3);
+    op |= instr.jump;
 
     return op;
 }
@@ -284,4 +284,62 @@ char *extract_label(const char *line, char *label) {
     strncpy(label, start, len);
     label[len] = '\0';
     return label;
+}
+
+/* Function: assemble
+Performs the second pass of the assembler.
+
+file_name: the name of the input .asm file used to generate .hack file
+instructions: the array of parsed instructions from pass 1
+num_instructions: number of parsed instructions
+
+This function creates the output .hack file, iterates over each
+instruction, converts it to a 16-bit Hack machine instruction,
+and writes it out in binary form.
+*/
+
+void assemble(const char *file_name, instruction *instructions, int num_instructions) {
+    char out_name[300];
+    snprintf(out_name, sizeof(out_name), "%s.hack", file_name);
+
+    FILE *out = fopen(out_name, "wb");
+    if (out == NULL) {
+        printf("ERROR: Could not create output file %s\n", out_name);
+        return;
+    }
+
+    int16_t next_var_addr = 16;
+
+    for (int i = 0; i < num_instructions; i++) {
+        instruction instr = instructions[i];
+        opcode op = 0;
+
+        if (instr.type == A_INSTR) {
+            if (instr.a.is_addr) {
+                op = instr.a.address;
+            } else {
+                Symbol *sym = symtable_find(instr.a.label);
+
+                if (sym != NULL) {
+                    op = sym->addr;
+                } else {
+                    symtable_insert(instr.a.label, next_var_addr);
+                    op = next_var_addr;
+                    next_var_addr++;
+                }
+
+                free(instr.a.label);
+            }
+        } else if (instr.type == C_INSTR) {
+
+            op = instruction_to_opcode(instr.c);
+        }
+
+        fprintf(out, "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c", OPCODE_TO_BINARY(op));
+
+        if (i < num_instructions - 1)
+            fprintf(out, "\n");
+    }
+
+    fclose(out);
 }
