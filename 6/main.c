@@ -35,7 +35,7 @@ int main(int argc, const char *argv[]) {
 
     fclose(file);
 
-    assemble(argv[1], instructions, num_instructions)
+    assemble(argv[1], instructions, num_instructions);
 
     free(instructions);
 
